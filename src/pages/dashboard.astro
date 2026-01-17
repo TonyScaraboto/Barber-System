@@ -1,11 +1,12 @@
 ---
-import { getUserRole, getDashboardPath } from '../lib/types';
-
-// Redireciona para dashboard correto
-export async function get({ Astro }) {
-  // Em produção, buscar userId do contexto/middleware
-  // Aqui assume que middleware já protege e redireciona
-  return Astro.redirect('/');
-}
+import Layout from '../layouts/Layout.astro';
 ---
-// ...nenhum conteúdo HTML ou CSS...
+<Layout title="Dashboard - Sistema Barbearia">
+  <main class="container">
+    <h1>Redirecionando...</h1>
+    <script>
+      // Redirecionamento client-side para garantir funcionalidade em ambientes estáticos
+      window.location.href = '/';
+    </script>
+  </main>
+</Layout>
