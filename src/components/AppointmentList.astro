@@ -1,0 +1,161 @@
+---
+interface Appointment {
+  id: string | number;
+  servico?: string;
+  serviceName?: string;
+  barbeiro?: string;
+  barberName?: string;
+  data?: string;
+  date?: string;
+  horario?: string;
+  time?: string;
+  status: 'confirmado' | 'pendente' | 'cancelado' | 'confirmed' | 'pending' | 'completed' | 'cancelled';
+}
+
+interface Props {
+  appointments: Appointment[];
+}
+
+const { appointments } = Astro.props;
+---
+
+<div class="appointment-list">
+  {appointments.map(appointment => {
+    // Normaliza os campos para exibição
+    const servico = appointment.servico || appointment.serviceName || '-';
+    const barbeiro = appointment.barbeiro || appointment.barberName || '-';
+    const data = appointment.data || appointment.date || '-';
+    const horario = appointment.horario || appointment.time || '-';
+    let status = appointment.status;
+    if (status === 'confirmed') status = 'confirmado';
+    if (status === 'pending') status = 'pendente';
+    if (status === 'cancelled') status = 'cancelado';
+    if (status === 'completed') status = 'concluido';
+    return (
+      <div class="appointment-item">
+        <div class="appointment-header">
+          <h3>{servico}</h3>
+          <span class={`badge badge-${status === 'confirmado' ? 'success' : status === 'pendente' ? 'warning' : status === 'cancelado' ? 'danger' : 'info'}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        </div>
+        <div class="appointment-info">
+          <div class="info-item">
+            <span class="info-icon">👤</span>
+            <span>{barbeiro}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">📅</span>
+            <span>{data}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-icon">🕐</span>
+            <span>{horario}</span>
+          </div>
+        </div>
+        <div class="appointment-actions">
+          <button class="btn btn-secondary btn-sm">Reagendar</button>
+          <button class="btn-text btn-danger">Cancelar</button>
+        </div>
+      </div>
+    );
+  })}
+</div>
+
+<style>
+  .appointment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .appointment-item {
+    background: var(--gray-700);
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--gray-600);
+    transition: all 0.3s ease;
+  }
+
+  .appointment-item:hover {
+    border-color: var(--neon-blue);
+    box-shadow: var(--shadow-neon-sm);
+    transform: translateX(8px);
+  }
+
+  .appointment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .appointment-header h3 {
+    font-size: 1.1rem;
+    color: var(--gray-100);
+    font-weight: 600;
+  }
+
+  .appointment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--gray-300);
+    font-size: 0.9rem;
+  }
+
+  .info-icon {
+    font-size: 1.1rem;
+  }
+
+  .appointment-actions {
+    display: flex;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-600);
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-text {
+    background: transparent;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn-danger {
+    color: var(--accent-danger);
+  }
+
+  .btn-text:hover {
+    color: var(--neon-blue);
+  }
+
+  .btn-danger:hover {
+    color: #ff6688;
+  }
+
+  @media (max-width: 768px) {
+    .appointment-actions {
+      flex-direction: column;
+    }
+
+    .btn-sm {
+      width: 100%;
+    }
+  }
+</style>

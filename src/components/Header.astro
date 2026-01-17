@@ -1,0 +1,28 @@
+---
+import { SignInButton, SignUpButton, SignedIn, SignedOut, UserButton } from '@clerk/astro/components';
+---
+
+<header>
+  <div class="header-container">
+    <a href="/" class="header-logo">
+      ✂️ Sistema Barbearia
+    </a>
+    <div class="header-actions">
+      <SignedOut>
+        <SignInButton mode="modal">
+          <button class="clerk-button clerk-button-outline">
+            Entrar
+          </button>
+        </SignInButton>
+        <SignUpButton mode="modal">
+          <button class="clerk-button">
+            Cadastrar
+          </button>
+        </SignUpButton>
+      </SignedOut>
+      <SignedIn>
+        <UserButton afterSignOutUrl="/" />
+      </SignedIn>
+    </div>
+  </div>
+</header>

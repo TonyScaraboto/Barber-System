@@ -1,0 +1,793 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { mockServices, mockBarbers, createAppointment } from '../../../lib/data';
+import { getAuth } from '@clerk/astro/server';
+
+const { userId } = await getAuth(Astro);
+
+if (!userId) {
+  return Astro.redirect('/login');
+}
+
+const availableDates = Array.from({ length: 14 }, (_, i) => {
+  const date = new Date();
+  date.setDate(date.getDate() + i);
+  return date.toISOString().split('T')[0];
+});
+---
+
+<Layout title="Novo Agendamento - Sistema Barbearia">
+  <main class="container">
+    <div class="page-header">
+      <a href="/dashboard/client" class="back-btn">← Voltar</a>
+      <h1 class="page-title">Novo Agendamento</h1>
+      <p class="page-subtitle">Escolha o serviço, barbeiro e horário desejado</p>
+    </div>
+
+    <div class="booking-container">
+      <form class="booking-form" id="bookingForm">
+        <!-- Step 1: Serviço -->
+        <div class="form-step active" data-step="1">
+          <div class="step-header">
+            <span class="step-number">1</span>
+            <h2>Escolha o Serviço</h2>
+          </div>
+          
+          <div class="services-grid">
+            {mockServices.map(service => (
+              <label class="service-card">
+                <input type="radio" name="service" value={service.id} required />
+                <div class="service-content">
+                  <div class="service-header">
+                    <h3>{service.name}</h3>
+                    <span class="service-price">R$ {service.price.toFixed(2)}</span>
+                  </div>
+                  <p class="service-description">{service.description}</p>
+                  <div class="service-footer">
+                    <span class="service-duration">⏱️ {service.duration} min</span>
+                    <span class="service-category">{service.category}</span>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <button type="button" class="btn btn-primary btn-next" onclick="nextStep(2)">
+            Próximo →
+          </button>
+        </div>
+
+        <!-- Step 2: Barbeiro -->
+        <div class="form-step" data-step="2">
+          <div class="step-header">
+            <span class="step-number">2</span>
+            <h2>Escolha o Barbeiro</h2>
+          </div>
+
+          <div class="barbers-grid">
+            {mockBarbers.map(barber => (
+              <label class="barber-card">
+                <input type="radio" name="barber" value={barber.id} required />
+                <div class="barber-content">
+                  <div class="barber-avatar">{barber.photo}</div>
+                  <h3>{barber.name}</h3>
+                  <div class="barber-rating">
+                    <span class="rating-star">⭐</span>
+                    <span>{barber.rating}</span>
+                  </div>
+                  <div class="barber-specialties">
+                    {barber.specialties.map(specialty => (
+                      <span class="specialty-badge">{specialty}</span>
+                    ))}
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+
+          <div class="step-buttons">
+            <button type="button" class="btn btn-secondary" onclick="prevStep(1)">
+              ← Voltar
+            </button>
+            <button type="button" class="btn btn-primary btn-next" onclick="nextStep(3)">
+              Próximo →
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 3: Data e Hora -->
+        <div class="form-step" data-step="3">
+          <div class="step-header">
+            <span class="step-number">3</span>
+            <h2>Escolha Data e Horário</h2>
+          </div>
+
+          <div class="datetime-picker">
+            <div class="date-section">
+              <h3>Data</h3>
+              <div class="dates-grid">
+                {availableDates.map(date => {
+                  const dateObj = new Date(date + 'T00:00:00');
+                  const day = dateObj.getDate();
+                  const month = dateObj.toLocaleDateString('pt-BR', { month: 'short' });
+                  const weekday = dateObj.toLocaleDateString('pt-BR', { weekday: 'short' });
+                  
+                  return (
+                    <label class="date-card">
+                      <input type="radio" name="date" value={date} required />
+                      <div class="date-content">
+                        <span class="date-weekday">{weekday}</span>
+                        <span class="date-day">{day}</span>
+                        <span class="date-month">{month}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div class="time-section">
+              <h3>Horário</h3>
+              <div class="times-grid">
+                {['09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00', '18:00'].map(time => (
+                  <label class="time-card">
+                    <input type="radio" name="time" value={time} required />
+                    <div class="time-content">
+                      <span class="time-value">{time}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div class="step-buttons">
+            <button type="button" class="btn btn-secondary" onclick="prevStep(2)">
+              ← Voltar
+            </button>
+            <button type="button" class="btn btn-primary btn-next" onclick="nextStep(4)">
+              Próximo →
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 4: Confirmação -->
+        <div class="form-step" data-step="4">
+          <div class="step-header">
+            <span class="step-number">4</span>
+            <h2>Confirmar Agendamento</h2>
+          </div>
+
+          <div class="confirmation-card">
+            <div class="confirmation-header">
+              <h3>Resumo do Agendamento</h3>
+            </div>
+            
+            <div class="confirmation-details" id="confirmationDetails">
+              <div class="detail-row">
+                <span class="detail-label">Serviço:</span>
+                <span class="detail-value" id="confirmService">-</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Barbeiro:</span>
+                <span class="detail-value" id="confirmBarber">-</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Data:</span>
+                <span class="detail-value" id="confirmDate">-</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Horário:</span>
+                <span class="detail-value" id="confirmTime">-</span>
+              </div>
+              <div class="detail-row total">
+                <span class="detail-label">Total:</span>
+                <span class="detail-value" id="confirmPrice">-</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="notes">Observações (opcional)</label>
+              <textarea id="notes" name="notes" rows="4" placeholder="Alguma observação especial?"></textarea>
+            </div>
+          </div>
+
+          <div class="step-buttons">
+            <button type="button" class="btn btn-secondary" onclick="prevStep(3)">
+              ← Voltar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              ✓ Confirmar Agendamento
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-steps">
+          <div class="progress-step active" data-step="1">
+            <div class="step-circle">1</div>
+            <span>Serviço</span>
+          </div>
+          <div class="progress-step" data-step="2">
+            <div class="step-circle">2</div>
+            <span>Barbeiro</span>
+          </div>
+          <div class="progress-step" data-step="3">
+            <div class="step-circle">3</div>
+            <span>Data/Hora</span>
+          </div>
+          <div class="progress-step" data-step="4">
+            <div class="step-circle">4</div>
+            <span>Confirmar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<script>
+  const services = {mockServices.map(s => ({ id: s.id, name: s.name, price: s.price }))};
+  const barbers = {mockBarbers.map(b => ({ id: b.id, name: b.name }))};
+
+  function nextStep(step) {
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.querySelector(`[data-step="${step}"]`).classList.add('active');
+    
+    document.querySelectorAll('.progress-step').forEach((s, i) => {
+      if (i < step) s.classList.add('active');
+      else s.classList.remove('active');
+    });
+    
+    const progress = ((step - 1) / 3) * 100;
+    document.getElementById('progressBar').style.width = `${progress}%`;
+    
+    if (step === 4) updateConfirmation();
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function prevStep(step) {
+    nextStep(step);
+  }
+
+  function updateConfirmation() {
+    const form = document.getElementById('bookingForm');
+    const serviceId = form.elements['service'].value;
+    const barberId = form.elements['barber'].value;
+    const date = form.elements['date'].value;
+    const time = form.elements['time'].value;
+
+    const service = services.find(s => s.id === serviceId);
+    const barber = barbers.find(b => b.id === barberId);
+
+    document.getElementById('confirmService').textContent = service?.name || '-';
+    document.getElementById('confirmBarber').textContent = barber?.name || '-';
+    document.getElementById('confirmDate').textContent = new Date(date + 'T00:00:00').toLocaleDateString('pt-BR') || '-';
+    document.getElementById('confirmTime').textContent = time || '-';
+    document.getElementById('confirmPrice').textContent = service ? `R$ ${service.price.toFixed(2)}` : '-';
+  }
+
+  document.getElementById('bookingForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const serviceId = form.elements['service'].value;
+    const barberId = form.elements['barber'].value;
+    const date = form.elements['date'].value;
+    const time = form.elements['time'].value;
+    const notes = form.elements['notes'].value;
+    // Busca dados do serviço e barbeiro
+    const service = {mockServices}.find(s => s.id === serviceId);
+    const barber = {mockBarbers}.find(b => b.id === barberId);
+    // Cria agendamento mock
+    if (service && barber) {
+      createAppointment({
+        id: Date.now().toString(),
+        clientId: '{userId}',
+        clientName: 'Cliente Exemplo',
+        barbershopId: 'barbershop_1',
+        barberId: barber.id,
+        barberName: barber.name,
+        serviceId: service.id,
+        serviceName: service.name,
+        date,
+        time,
+        status: 'pending',
+        price: service.price,
+        notes,
+        createdAt: new Date()
+      });
+    }
+    alert('Agendamento confirmado! Redirecionando...');
+    window.location.href = '/dashboard/client';
+  });
+</script>
+
+<style>
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .back-btn {
+    display: inline-block;
+    color: var(--neon-blue);
+    text-decoration: none;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+  }
+
+  .back-btn:hover {
+    color: var(--neon-blue-light);
+    transform: translateX(-5px);
+  }
+
+  .page-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-blue-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-subtitle {
+    color: var(--gray-400);
+    font-size: 1.1rem;
+  }
+
+  .booking-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .form-step {
+    display: none;
+  }
+
+  .form-step.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-700);
+  }
+
+  .step-number {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--neon-blue);
+    color: var(--gray-900);
+    border-radius: 50%;
+    font-size: 1.5rem;
+    font-weight: 800;
+    box-shadow: var(--shadow-neon-md);
+  }
+
+  .step-header h2 {
+    color: var(--gray-100);
+    font-size: 1.8rem;
+  }
+
+  /* Services Grid */
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .service-card {
+    cursor: pointer;
+  }
+
+  .service-card input {
+    display: none;
+  }
+
+  .service-content {
+    padding: 1.5rem;
+    background: var(--gray-800);
+    border: 2px solid var(--gray-700);
+    border-radius: 1rem;
+    transition: all 0.3s ease;
+    height: 100%;
+  }
+
+  .service-card input:checked + .service-content {
+    border-color: var(--neon-blue);
+    box-shadow: var(--shadow-neon-md);
+    background: rgba(0, 240, 255, 0.05);
+  }
+
+  .service-content:hover {
+    border-color: var(--neon-blue);
+    transform: translateY(-4px);
+  }
+
+  .service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 0.75rem;
+  }
+
+  .service-header h3 {
+    color: var(--gray-100);
+    font-size: 1.2rem;
+  }
+
+  .service-price {
+    color: var(--accent-success);
+    font-weight: 800;
+    font-size: 1.3rem;
+  }
+
+  .service-description {
+    color: var(--gray-400);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .service-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--gray-700);
+  }
+
+  .service-duration {
+    color: var(--gray-300);
+    font-size: 0.875rem;
+  }
+
+  .service-category {
+    padding: 0.25rem 0.75rem;
+    background: var(--gray-700);
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    color: var(--neon-blue);
+    text-transform: uppercase;
+  }
+
+  /* Barbers Grid */
+  .barbers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .barber-card input {
+    display: none;
+  }
+
+  .barber-content {
+    padding: 2rem 1.5rem;
+    background: var(--gray-800);
+    border: 2px solid var(--gray-700);
+    border-radius: 1rem;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+
+  .barber-card input:checked + .barber-content {
+    border-color: var(--accent-success);
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+  }
+
+  .barber-content:hover {
+    border-color: var(--accent-success);
+    transform: scale(1.05);
+  }
+
+  .barber-avatar {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .barber-content h3 {
+    color: var(--gray-100);
+    margin-bottom: 0.5rem;
+  }
+
+  .barber-rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    background: rgba(255, 170, 0, 0.1);
+    border-radius: 9999px;
+    margin-bottom: 1rem;
+  }
+
+  .rating-star {
+    font-size: 1rem;
+  }
+
+  .barber-specialties {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .specialty-badge {
+    padding: 0.25rem 0.5rem;
+    background: var(--gray-700);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--gray-300);
+  }
+
+  /* DateTime Picker */
+  .datetime-picker {
+    margin-bottom: 2rem;
+  }
+
+  .date-section, .time-section {
+    margin-bottom: 2rem;
+  }
+
+  .date-section h3, .time-section h3 {
+    color: var(--gray-200);
+    margin-bottom: 1rem;
+  }
+
+  .dates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 1rem;
+  }
+
+  .date-card input {
+    display: none;
+  }
+
+  .date-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0.5rem;
+    background: var(--gray-800);
+    border: 2px solid var(--gray-700);
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .date-card input:checked + .date-content {
+    border-color: var(--neon-blue);
+    background: rgba(0, 240, 255, 0.1);
+    box-shadow: var(--shadow-neon-sm);
+  }
+
+  .date-content:hover {
+    border-color: var(--neon-blue);
+  }
+
+  .date-weekday {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+    text-transform: uppercase;
+  }
+
+  .date-day {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--gray-100);
+  }
+
+  .date-month {
+    font-size: 0.875rem;
+    color: var(--gray-400);
+  }
+
+  .times-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 1rem;
+  }
+
+  .time-card input {
+    display: none;
+  }
+
+  .time-content {
+    padding: 1rem;
+    background: var(--gray-800);
+    border: 2px solid var(--gray-700);
+    border-radius: 0.75rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .time-card input:checked + .time-content {
+    border-color: var(--neon-blue);
+    background: rgba(0, 240, 255, 0.1);
+    box-shadow: var(--shadow-neon-sm);
+  }
+
+  .time-content:hover {
+    border-color: var(--neon-blue);
+  }
+
+  .time-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--gray-100);
+  }
+
+  /* Confirmation */
+  .confirmation-card {
+    background: var(--gray-800);
+    border: 2px solid var(--gray-700);
+    border-radius: 1rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .confirmation-header h3 {
+    color: var(--gray-100);
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--gray-700);
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--gray-700);
+  }
+
+  .detail-row.total {
+    border-bottom: none;
+    padding-top: 1.5rem;
+    margin-top: 0.5rem;
+    border-top: 2px solid var(--gray-700);
+  }
+
+  .detail-label {
+    color: var(--gray-400);
+    font-weight: 600;
+  }
+
+  .detail-value {
+    color: var(--gray-100);
+    font-weight: 700;
+  }
+
+  .detail-row.total .detail-value {
+    color: var(--accent-success);
+    font-size: 1.5rem;
+  }
+
+  /* Progress */
+  .progress-container {
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--gray-700);
+  }
+
+  .progress-bar {
+    height: 8px;
+    background: var(--gray-700);
+    border-radius: 9999px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--neon-blue), var(--electric-blue));
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px var(--neon-blue);
+  }
+
+  .progress-steps {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+  }
+
+  .progress-step.active {
+    opacity: 1;
+  }
+
+  .step-circle {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-700);
+    border: 2px solid var(--gray-600);
+    border-radius: 50%;
+    font-weight: 700;
+    color: var(--gray-400);
+  }
+
+  .progress-step.active .step-circle {
+    background: var(--neon-blue);
+    border-color: var(--neon-blue);
+    color: var(--gray-900);
+    box-shadow: var(--shadow-neon-md);
+  }
+
+  .progress-step span {
+    font-size: 0.875rem;
+    color: var(--gray-400);
+  }
+
+  .progress-step.active span {
+    color: var(--neon-blue);
+  }
+
+  .step-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .step-buttons .btn {
+    flex: 1;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @media (max-width: 768px) {
+    .page-title {
+      font-size: 2rem;
+    }
+
+    .services-grid,
+    .barbers-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .dates-grid {
+      grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    }
+
+    .step-buttons {
+      flex-direction: column;
+    }
+  }
+</style>

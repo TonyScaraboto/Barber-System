@@ -1,0 +1,385 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import StatsCard from '../../components/StatsCard.astro';
+import AppointmentList from '../../components/AppointmentList.astro';
+import { mockAppointments, getAppointmentsByClient } from '../../lib/data';
+import { getAuth } from '@clerk/astro/server';
+
+const { userId } = await getAuth(Astro);
+
+if (!userId) {
+  return Astro.redirect('/login');
+}
+
+// Filtrar agendamentos do usuário logado
+const userAppointments = getAppointmentsByClient(userId);
+
+const stats = {
+  proximosAgendamentos: userAppointments.filter(apt => apt.status === 'confirmed').length,
+  servicosRealizados: 28,
+  pontosFidelidade: 150,
+  proximoCorte: userAppointments[0]?.date || '-'
+};
+---
+
+<Layout title="Dashboard Cliente - Sistema Barbearia">
+  <main class="container">
+    <div class="dashboard-header">
+      <div>
+        <h1 class="dashboard-title">Dashboard do Cliente</h1>
+        <p class="dashboard-subtitle">Bem-vindo de volta! Gerencie seus agendamentos.</p>
+      </div>
+      <a href="/dashboard/client/novo-agendamento" class="btn btn-primary">
+        ➕ Novo Agendamento
+      </a>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-4 stats-grid">
+      <StatsCard 
+        title="Próximos Agendamentos"
+        value={stats.proximosAgendamentos}
+        icon="📅"
+        color="neon"
+      />
+      <StatsCard 
+        title="Serviços Realizados"
+        value={stats.servicosRealizados}
+        icon="✂️"
+        color="success"
+      />
+      <StatsCard 
+        title="Pontos Fidelidade"
+        value={stats.pontosFidelidade}
+        icon="⭐"
+        color="warning"
+      />
+      <StatsCard 
+        title="Próximo Corte"
+        value={stats.proximoCorte}
+        icon="🗓️"
+        color="info"
+      />
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-2 content-grid">
+      <!-- Agendamentos -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Meus Agendamentos</h2>
+          <span class="badge badge-info">{userAppointments.length} ativos</span>
+        </div>
+        <AppointmentList appointments={userAppointments} />
+      </div>
+
+      <!-- Benefícios e Fidelidade -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Programa de Fidelidade</h2>
+        </div>
+        <div class="loyalty-content">
+          <div class="points-display">
+            <div class="points-number">{stats.pontosFidelidade}</div>
+            <div class="points-label">Pontos Acumulados</div>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style={`width: ${(stats.pontosFidelidade / 200) * 100}%`}></div>
+          </div>
+          <p class="progress-text">Faltam {200 - stats.pontosFidelidade} pontos para o próximo corte grátis!</p>
+          
+          <div class="rewards-list">
+            <h3>Recompensas Disponíveis</h3>
+            <div class="reward-item">
+              <span class="reward-icon">🎁</span>
+              <div>
+                <h4>Corte Grátis</h4>
+                <p>200 pontos</p>
+              </div>
+              <span class="badge badge-warning">75%</span>
+            </div>
+            <div class="reward-item locked">
+              <span class="reward-icon">✨</span>
+              <div>
+                <h4>Combo Premium</h4>
+                <p>400 pontos</p>
+              </div>
+              <span class="badge">37.5%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Histórico -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Histórico Recente</h2>
+        <a href="/dashboard/client/historico" class="btn btn-secondary btn-sm">Ver Tudo</a>
+      </div>
+      <div class="history-list">
+        <div class="history-item">
+          <div class="history-icon">✂️</div>
+          <div class="history-content">
+            <h3>Corte de Cabelo</h3>
+            <p>Realizado por João Silva em 15/01/2026</p>
+          </div>
+          <div class="history-meta">
+            <span class="badge badge-success">Concluído</span>
+            <span class="price">R$ 35,00</span>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-icon">💈</div>
+          <div class="history-content">
+            <h3>Barba + Corte</h3>
+            <p>Realizado por Pedro Santos em 10/01/2026</p>
+          </div>
+          <div class="history-meta">
+            <span class="badge badge-success">Concluído</span>
+            <span class="price">R$ 50,00</span>
+          </div>
+        </div>
+        <div class="history-item">
+          <div class="history-icon">✂️</div>
+          <div class="history-content">
+            <h3>Corte de Cabelo</h3>
+            <p>Realizado por João Silva em 05/01/2026</p>
+          </div>
+          <div class="history-meta">
+            <span class="badge badge-success">Concluído</span>
+            <span class="price">R$ 35,00</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--gray-700);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-blue-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+
+  .dashboard-subtitle {
+    color: var(--gray-400);
+    font-size: 1.1rem;
+  }
+
+  .stats-grid {
+    margin-bottom: 2rem;
+  }
+
+  .content-grid {
+    margin-bottom: 2rem;
+  }
+
+  /* Loyalty Program */
+  .loyalty-content {
+    padding: 1rem 0;
+  }
+
+  .points-display {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, rgba(255, 170, 0, 0.1), rgba(255, 170, 0, 0.05));
+    border-radius: 1rem;
+    border: 2px solid var(--accent-warning);
+  }
+
+  .points-number {
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--accent-warning);
+    text-shadow: 0 0 20px rgba(255, 170, 0, 0.5);
+  }
+
+  .points-label {
+    color: var(--gray-400);
+    font-size: 1rem;
+    margin-top: 0.5rem;
+  }
+
+  .progress-bar {
+    height: 12px;
+    background: var(--gray-700);
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-warning), var(--accent-success));
+    border-radius: 9999px;
+    transition: width 0.5s ease;
+    box-shadow: 0 0 10px var(--accent-warning);
+  }
+
+  .progress-text {
+    text-align: center;
+    color: var(--gray-400);
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+  }
+
+  .rewards-list h3 {
+    color: var(--gray-200);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+
+  .reward-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--gray-700);
+    border-radius: 0.75rem;
+    border: 2px solid var(--gray-600);
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+  }
+
+  .reward-item:hover {
+    border-color: var(--accent-warning);
+    transform: translateX(5px);
+  }
+
+  .reward-item.locked {
+    opacity: 0.5;
+  }
+
+  .reward-icon {
+    font-size: 2rem;
+    width: 50px;
+    text-align: center;
+  }
+
+  .reward-item h4 {
+    color: var(--gray-100);
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .reward-item p {
+    color: var(--gray-400);
+    font-size: 0.875rem;
+  }
+
+  /* History */
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: var(--gray-700);
+    border-radius: 0.75rem;
+    border: 1px solid var(--gray-600);
+    transition: all 0.3s ease;
+  }
+
+  .history-item:hover {
+    border-color: var(--neon-blue);
+    transform: translateX(8px);
+    box-shadow: var(--shadow-neon-sm);
+  }
+
+  .history-icon {
+    font-size: 2rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-600);
+    border-radius: 0.75rem;
+    border: 2px solid var(--neon-blue);
+  }
+
+  .history-content {
+    flex: 1;
+  }
+
+  .history-content h3 {
+    color: var(--gray-100);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .history-content p {
+    color: var(--gray-400);
+    font-size: 0.9rem;
+  }
+
+  .history-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+  }
+
+  .price {
+    color: var(--accent-success);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 768px) {
+    .dashboard-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .dashboard-header .btn {
+      width: 100%;
+    }
+
+    .dashboard-title {
+      font-size: 2rem;
+    }
+
+    .history-item {
+      flex-direction: column;
+      text-align: center;
+      gap: 1rem;
+    }
+
+    .history-meta {
+      align-items: center;
+    }
+
+    .points-number {
+      font-size: 3rem;
+    }
+  }
+</style>

@@ -1,0 +1,494 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import StatsCard from '../../components/StatsCard.astro';
+import { mockAppointments, getBarbershopStats, mockBarbers, getAppointmentsByBarbershop } from '../../lib/data';
+import { getAuth } from '@clerk/astro/server';
+
+const { userId } = await getAuth(Astro);
+
+if (!userId) {
+  return Astro.redirect('/login');
+}
+
+const barbershopId = 'barbershop_1'; // Em produção, buscar pelo usuário logado
+const stats = getBarbershopStats(barbershopId);
+const allAppointments = getAppointmentsByBarbershop(barbershopId);
+const today = new Date().toISOString().split('T')[0];
+const todayAppointments = allAppointments.filter(apt => apt.date === today);
+---
+
+<Layout title="Dashboard Barbearia - Sistema Barbearia">
+  <main class="container">
+    <div class="dashboard-header">
+      <div>
+        <h1 class="dashboard-title">Dashboard da Barbearia</h1>
+        <p class="dashboard-subtitle">Gerencie agendamentos, barbeiros e serviços.</p>
+      </div>
+      <div class="header-actions">
+        <a href="/dashboard/barbershop/agendamentos" class="btn btn-secondary btn-sm">
+          📋 Ver Todos
+        </a>
+        <a href="/dashboard/barbershop/novo-agendamento" class="btn btn-primary">
+          ➕ Novo Agendamento
+        </a>
+      </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-4 stats-grid">
+      <StatsCard 
+        title="Agendamentos Hoje"
+        value={stats.todayAppointments}
+        icon="📅"
+        color="neon"
+      />
+      <StatsCard 
+        title="Pendentes"
+        value={stats.pendingAppointments}
+        icon="⏳"
+        color="warning"
+      />
+      <StatsCard 
+        title="Confirmados"
+        value={stats.confirmedAppointments}
+        icon="✅"
+        color="success"
+      />
+      <StatsCard 
+        title="Receita Mensal"
+        value={`R$ ${stats.monthlyRevenue.toFixed(2)}`}
+        icon="💰"
+        color="info"
+      />
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-2 content-grid">
+      <!-- Agendamentos de Hoje -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Agendamentos de Hoje</h2>
+          <span class="badge badge-neon">{todayAppointments.length}</span>
+        </div>
+        <div class="appointments-today">
+          {todayAppointments.length > 0 ? (
+            todayAppointments.map(apt => (
+              <div class="appointment-card">
+                <div class="appointment-time">{apt.time}</div>
+                <div class="appointment-details">
+                  <h4>{apt.clientName}</h4>
+                  <p>{apt.serviceName} - {apt.barberName}</p>
+                </div>
+                <span class={`badge badge-${apt.status === 'confirmed' ? 'success' : 'warning'}`}>
+                  {apt.status === 'confirmed' ? 'Confirmado' : 'Pendente'}
+                </span>
+              </div>
+            ))
+          ) : (
+            <div class="empty-state">
+              <div class="empty-icon">📅</div>
+              <p>Nenhum agendamento para hoje</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <!-- Barbeiros -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Equipe</h2>
+          <a href="/dashboard/barbershop/barbeiros" class="btn btn-secondary btn-sm">Gerenciar</a>
+        </div>
+        <div class="barbers-list">
+          {mockBarbers.map(barber => (
+            <div class="barber-card">
+              <div class="barber-avatar">{barber.photo}</div>
+              <div class="barber-info">
+                <h4>{barber.name}</h4>
+                <p>{barber.specialties.join(', ')}</p>
+              </div>
+              <div class="barber-rating">
+                <span class="rating-star">⭐</span>
+                <span class="rating-value">{barber.rating}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- Próximos Agendamentos -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Próximos Agendamentos</h2>
+        <div class="filter-tabs">
+          <button class="tab-btn active">Todos</button>
+          <button class="tab-btn">Pendentes</button>
+          <button class="tab-btn">Confirmados</button>
+        </div>
+      </div>
+      <div class="appointments-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Cliente</th>
+              <th>Serviço</th>
+              <th>Barbeiro</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mockAppointments.slice(0, 5).map(apt => (
+              <tr>
+                <td>
+                  <div class="datetime">
+                    <span class="date">{apt.date}</span>
+                    <span class="time">{apt.time}</span>
+                  </div>
+                </td>
+                <td><strong>{apt.clientName}</strong></td>
+                <td>{apt.serviceName}</td>
+                <td>{apt.barberName}</td>
+                <td class="price">R$ {apt.price.toFixed(2)}</td>
+                <td>
+                  <span class={`badge badge-${apt.status === 'confirmed' ? 'success' : apt.status === 'pending' ? 'warning' : 'danger'}`}>
+                    {apt.status === 'confirmed' ? 'Confirmado' : apt.status === 'pending' ? 'Pendente' : 'Cancelado'}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-buttons">
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Cancelar">❌</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</Layout>
+
+<style>
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid var(--gray-700);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .dashboard-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--neon-blue) 0%, var(--electric-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+  }
+
+  .dashboard-subtitle {
+    color: var(--gray-400);
+    font-size: 1.1rem;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .stats-grid {
+    margin-bottom: 2rem;
+  }
+
+  .content-grid {
+    margin-bottom: 2rem;
+  }
+
+  /* Agendamentos de Hoje */
+  .appointments-today {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .appointment-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--gray-700);
+    border-radius: 0.75rem;
+    border: 2px solid var(--gray-600);
+    transition: all 0.3s ease;
+  }
+
+  .appointment-card:hover {
+    border-color: var(--neon-blue);
+    transform: translateX(5px);
+    box-shadow: var(--shadow-neon-sm);
+  }
+
+  .appointment-time {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--neon-blue);
+    text-align: center;
+    min-width: 70px;
+    padding: 0.5rem;
+    background: rgba(0, 240, 255, 0.1);
+    border-radius: 0.5rem;
+    border: 2px solid var(--neon-blue);
+  }
+
+  .appointment-details {
+    flex: 1;
+  }
+
+  .appointment-details h4 {
+    color: var(--gray-100);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .appointment-details p {
+    color: var(--gray-400);
+    font-size: 0.875rem;
+  }
+
+  /* Barbeiros */
+  .barbers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .barber-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--gray-700);
+    border-radius: 0.75rem;
+    border: 2px solid var(--gray-600);
+    transition: all 0.3s ease;
+  }
+
+  .barber-card:hover {
+    border-color: var(--accent-success);
+    transform: translateX(5px);
+  }
+
+  .barber-avatar {
+    font-size: 3rem;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-600);
+    border-radius: 50%;
+    border: 2px solid var(--accent-success);
+  }
+
+  .barber-info {
+    flex: 1;
+  }
+
+  .barber-info h4 {
+    color: var(--gray-100);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .barber-info p {
+    color: var(--gray-400);
+    font-size: 0.875rem;
+  }
+
+  .barber-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 170, 0, 0.1);
+    border-radius: 9999px;
+    border: 2px solid var(--accent-warning);
+  }
+
+  .rating-star {
+    font-size: 1.2rem;
+  }
+
+  .rating-value {
+    color: var(--accent-warning);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  /* Tabela */
+  .filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .tab-btn {
+    padding: 0.5rem 1rem;
+    background: var(--gray-700);
+    border: 2px solid var(--gray-600);
+    color: var(--gray-300);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .tab-btn:hover {
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+  }
+
+  .tab-btn.active {
+    background: var(--neon-blue);
+    border-color: var(--neon-blue);
+    color: var(--gray-900);
+  }
+
+  .appointments-table {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead {
+    background: var(--gray-700);
+  }
+
+  th {
+    padding: 1rem;
+    text-align: left;
+    color: var(--gray-300);
+    font-weight: 600;
+    font-size: 0.875rem;
+    border-bottom: 2px solid var(--gray-600);
+  }
+
+  td {
+    padding: 1rem;
+    color: var(--gray-200);
+    border-bottom: 1px solid var(--gray-700);
+  }
+
+  tbody tr {
+    transition: all 0.2s ease;
+  }
+
+  tbody tr:hover {
+    background: var(--gray-700);
+  }
+
+  .datetime {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .date {
+    color: var(--gray-100);
+    font-weight: 600;
+  }
+
+  .time {
+    color: var(--neon-blue);
+    font-size: 0.875rem;
+  }
+
+  .price {
+    color: var(--accent-success);
+    font-weight: 700;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: var(--gray-700);
+    border: 2px solid var(--gray-600);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+  }
+
+  .btn-icon:hover {
+    border-color: var(--neon-blue);
+    transform: scale(1.1);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+
+  .empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .empty-state p {
+    color: var(--gray-400);
+  }
+
+  .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 968px) {
+    .dashboard-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .header-actions {
+      width: 100%;
+    }
+
+    .header-actions .btn {
+      flex: 1;
+    }
+
+    .dashboard-title {
+      font-size: 2rem;
+    }
+
+    table {
+      font-size: 0.875rem;
+    }
+
+    th, td {
+      padding: 0.75rem 0.5rem;
+    }
+  }
+</style>

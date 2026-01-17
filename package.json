@@ -1,0 +1,19 @@
+{
+  "name": "steadfast-solstice",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/react": "^4.4.2",
+    "@clerk/astro": "^2.16.13",
+    "@clerk/clerk-react": "^5.59.4",
+    "astro": "^5.16.11",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  }
+}

@@ -1,0 +1,366 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { SignUp } from '@clerk/astro/components';
+---
+
+<Layout title="Cadastro - Sistema Barbearia">
+	<main>
+		<div class="signup-background">
+			<div class="signup-container">
+				<div class="header">
+					<div class="logo-icon">✂️</div>
+					<h1>Criar Conta</h1>
+					<p>Junte-se a nós e comece a gerenciar seus agendamentos</p>
+				</div>
+				
+				<div class="clerk-wrapper">
+					<SignUp 
+						appearance={{
+							elements: {
+								rootBox: "w-full",
+								card: "bg-transparent shadow-none",
+								headerTitle: "text-[var(--electric-blue)] text-2xl font-bold",
+								headerSubtitle: "text-[var(--gray-400)]",
+								socialButtonsBlockButton: "bg-[var(--gray-700)] border-2 border-[var(--gray-600)] text-[var(--gray-100)] hover:border-[var(--electric-blue)] hover:shadow-[0_0_10px_rgba(0,102,255,0.5)] transition-all",
+								socialButtonsBlockButtonText: "text-[var(--gray-100)] font-semibold",
+								formFieldInput: "bg-[var(--gray-700)] border-2 border-[var(--gray-600)] text-[var(--gray-100)] focus:border-[var(--electric-blue)] focus:shadow-[0_0_10px_rgba(0,102,255,0.5)]",
+								formButtonPrimary: "bg-[var(--electric-blue)] text-white hover:bg-[var(--neon-blue)] shadow-[0_0_10px_rgba(0,102,255,0.5)] hover:shadow-[0_0_20px_rgba(0,102,255,0.6)] font-bold",
+								footerActionLink: "text-[var(--electric-blue)] hover:text-[var(--neon-blue-light)]",
+								identityPreviewText: "text-[var(--gray-100)]",
+								identityPreviewEditButton: "text-[var(--electric-blue)]",
+								formFieldLabel: "text-[var(--gray-300)]",
+								dividerLine: "bg-[var(--gray-600)]",
+								dividerText: "text-[var(--gray-400)]",
+								formFieldInputShowPasswordButton: "text-[var(--electric-blue)]",
+								otpCodeFieldInput: "bg-[var(--gray-700)] border-[var(--gray-600)] text-[var(--gray-100)]",
+								alertText: "text-[var(--gray-100)]",
+								formFieldErrorText: "text-[var(--accent-danger)]",
+								formFieldSuccessText: "text-[var(--accent-success)]",
+								formFieldWarningText: "text-[var(--accent-warning)]",
+								footerActionText: "text-[var(--gray-400)]",
+								footerAction: "justify-center mt-4"
+							}
+						}}
+					/>
+				</div>
+				
+				<div class="footer">
+					<div class="footer-divider"></div>
+					<p>Já tem uma conta? <a href="/login">Faça login</a></p>
+					<div class="features-list">
+						<div class="feature-item">
+							<span class="feature-icon">✓</span>
+							<span>Agendamentos ilimitados</span>
+						</div>
+						<div class="feature-item">
+							<span class="feature-icon">✓</span>
+							<span>Programa de fidelidade</span>
+						</div>
+						<div class="feature-item">
+							<span class="feature-icon">✓</span>
+							<span>Histórico completo</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<div class="decorative-elements">
+				<div class="neon-circle neon-circle-1"></div>
+				<div class="neon-circle neon-circle-2"></div>
+				<div class="neon-line neon-line-1"></div>
+				<div class="neon-line neon-line-2"></div>
+			</div>
+		</div>
+	</main>
+</Layout>
+
+<style>
+	main {
+		position: relative;
+		min-height: calc(100vh - 4rem);
+		overflow: hidden;
+	}
+
+	.signup-background {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		min-height: calc(100vh - 4rem);
+		padding: 2rem;
+		background: 
+			radial-gradient(circle at 30% 40%, rgba(0, 102, 255, 0.15) 0%, transparent 50%),
+			radial-gradient(circle at 70% 60%, rgba(0, 240, 255, 0.1) 0%, transparent 50%),
+			var(--gray-900);
+		position: relative;
+	}
+
+	.signup-container {
+		background: rgba(26, 26, 26, 0.95);
+		backdrop-filter: blur(20px);
+		padding: 3rem;
+		border-radius: 1.5rem;
+		border: 2px solid var(--electric-blue);
+		box-shadow: 
+			0 0 40px rgba(0, 102, 255, 0.7),
+			0 0 80px rgba(0, 102, 255, 0.2),
+			inset 0 0 60px rgba(0, 102, 255, 0.05);
+		max-width: 480px;
+		width: 100%;
+		animation: fadeInScale 0.6s ease;
+		position: relative;
+		z-index: 10;
+	}
+
+	.signup-container::before {
+		content: '';
+		position: absolute;
+		top: -2px;
+		left: -2px;
+		right: -2px;
+		bottom: -2px;
+		background: linear-gradient(45deg, var(--electric-blue), var(--neon-blue), var(--electric-blue));
+		border-radius: 1.5rem;
+		z-index: -1;
+		opacity: 0.3;
+		filter: blur(10px);
+		animation: rotate 4s linear infinite;
+	}
+
+	.header {
+		text-align: center;
+		margin-bottom: 2.5rem;
+	}
+
+	.logo-icon {
+		font-size: 4rem;
+		margin-bottom: 1rem;
+		animation: float 3s ease-in-out infinite;
+		filter: drop-shadow(0 0 20px var(--electric-blue));
+	}
+
+	.header h1 {
+		color: var(--electric-blue);
+		margin-bottom: 0.75rem;
+		font-size: 2rem;
+		font-weight: 800;
+		text-shadow: 0 0 20px rgba(0, 102, 255, 0.5);
+		background: linear-gradient(135deg, var(--electric-blue) 0%, var(--neon-blue-light) 100%);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+		background-clip: text;
+	}
+
+	.header p {
+		color: var(--gray-400);
+		font-size: 1rem;
+		line-height: 1.5;
+	}
+
+	.clerk-wrapper {
+		margin-bottom: 2rem;
+	}
+
+	.footer {
+		text-align: center;
+		margin-top: 2rem;
+	}
+
+	.footer-divider {
+		height: 2px;
+		background: linear-gradient(90deg, transparent, var(--electric-blue), transparent);
+		margin-bottom: 1.5rem;
+		opacity: 0.3;
+	}
+
+	.footer p {
+		color: var(--gray-400);
+		font-size: 0.95rem;
+		margin-bottom: 1.5rem;
+	}
+
+	.footer a {
+		color: var(--electric-blue);
+		text-decoration: none;
+		font-weight: 700;
+		transition: all 0.3s ease;
+		position: relative;
+		padding: 0.25rem 0.5rem;
+		border-radius: 0.25rem;
+	}
+
+	.footer a::before {
+		content: '';
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 0;
+		height: 2px;
+		background: var(--electric-blue);
+		transition: width 0.3s ease;
+	}
+
+	.footer a:hover {
+		color: var(--neon-blue-light);
+		text-shadow: 0 0 10px rgba(0, 102, 255, 0.5);
+		background: rgba(0, 102, 255, 0.1);
+	}
+
+	.footer a:hover::before {
+		width: 100%;
+	}
+
+	.features-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		margin-top: 1.5rem;
+		padding: 1.5rem;
+		background: rgba(0, 102, 255, 0.05);
+		border: 1px solid var(--electric-blue);
+		border-radius: 0.75rem;
+	}
+
+	.feature-item {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		color: var(--gray-300);
+		font-size: 0.9rem;
+	}
+
+	.feature-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 20px;
+		height: 20px;
+		background: var(--electric-blue);
+		color: white;
+		border-radius: 50%;
+		font-size: 0.7rem;
+		font-weight: bold;
+	}
+
+	/* Elementos Decorativos */
+	.decorative-elements {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		overflow: hidden;
+	}
+
+	.neon-circle {
+		position: absolute;
+		border-radius: 50%;
+		border: 2px solid var(--electric-blue);
+		opacity: 0.2;
+		animation: pulse 4s ease-in-out infinite;
+	}
+
+	.neon-circle-1 {
+		width: 350px;
+		height: 350px;
+		top: -175px;
+		right: -175px;
+		box-shadow: 0 0 60px var(--electric-blue);
+	}
+
+	.neon-circle-2 {
+		width: 450px;
+		height: 450px;
+		bottom: -225px;
+		left: -225px;
+		box-shadow: 0 0 80px var(--neon-blue);
+		animation-delay: 2s;
+	}
+
+	.neon-line {
+		position: absolute;
+		height: 2px;
+		background: linear-gradient(90deg, transparent, var(--electric-blue), transparent);
+		opacity: 0.3;
+		animation: slide 8s linear infinite;
+	}
+
+	.neon-line-1 {
+		width: 400px;
+		top: 25%;
+		right: -400px;
+		animation-delay: 1s;
+	}
+
+	.neon-line-2 {
+		width: 500px;
+		bottom: 35%;
+		left: -500px;
+		animation-delay: 5s;
+	}
+
+	@keyframes fadeInScale {
+		from {
+			opacity: 0;
+			transform: scale(0.95) translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: scale(1) translateY(0);
+		}
+	}
+
+	@keyframes float {
+		0%, 100% {
+			transform: translateY(0);
+		}
+		50% {
+			transform: translateY(-10px);
+		}
+	}
+
+	@keyframes rotate {
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			transform: scale(1);
+			opacity: 0.2;
+		}
+		50% {
+			transform: scale(1.1);
+			opacity: 0.4;
+		}
+	}
+
+	@keyframes slide {
+		0% {
+			transform: translateX(0);
+		}
+		100% {
+			transform: translateX(100vw);
+		}
+	}
+
+	@media (max-width: 640px) {
+		.signup-container {
+			padding: 2rem 1.5rem;
+		}
+
+		.header h1 {
+			font-size: 1.75rem;
+		}
+
+		.logo-icon {
+			font-size: 3rem;
+		}
+
+		.neon-circle-1,
+		.neon-circle-2 {
+			display: none;
+		}
+	}
+</style>
